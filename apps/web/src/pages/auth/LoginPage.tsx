@@ -3,15 +3,16 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, BarChart3 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 const schema = z.object({
-  email: z.string().email('E-mail inválido'),
+  name: z.string().min(2, 'Informe seu nome completo'),
   password: z.string().min(6, 'Senha deve ter ao menos 6 caracteres'),
 })
 
@@ -28,9 +29,18 @@ export function LoginPage() {
 
   async function onSubmit(data: FormData) {
     setServerError(null)
-    const { error } = await signIn(data.email, data.password)
+
+    // Busca o email pelo nome no banco
+    const { data: email, error: rpcError } = await supabase.rpc('get_email_by_name', { p_name: data.name })
+
+    if (rpcError || !email) {
+      setServerError('Nome não encontrado. Verifique o nome cadastrado.')
+      return
+    }
+
+    const { error } = await signIn(email as string, data.password)
     if (error) {
-      setServerError('E-mail ou senha incorretos.')
+      setServerError('Senha incorreta.')
     } else {
       navigate('/app')
     }
@@ -41,20 +51,19 @@ export function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
 
         {/* Logo */}
-        <div className="flex flex-col items-center gap-2 text-center">
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-              <BarChart3 className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-semibold tracking-tight">Fluxo Pesquisa</span>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <img src="/logo.png" alt="Fluxo Radar" className="h-16 object-contain" />
+          <div>
+            <h1 className="text-xl font-black tracking-tight">Fluxo Radar</h1>
+            <p className="text-sm font-medium text-muted-foreground">Pesquisa de Mercado</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Estudos de viabilidade para supermercados</p>
           </div>
-          <p className="text-sm text-muted-foreground">Estudos de viabilidade para supermercados</p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Entrar</CardTitle>
-            <CardDescription>Acesse sua conta para continuar</CardDescription>
+            <CardDescription>Use seu nome e senha para acessar</CardDescription>
           </CardHeader>
 
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -66,16 +75,16 @@ export function LoginPage() {
               )}
 
               <div className="space-y-1.5">
-                <Label htmlFor="email">E-mail</Label>
+                <Label htmlFor="name">Seu nome</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  autoComplete="email"
-                  {...register('email')}
+                  id="name"
+                  type="text"
+                  placeholder="Ex: Tiago Freire"
+                  autoComplete="name"
+                  {...register('name')}
                 />
-                {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email.message}</p>
+                {errors.name && (
+                  <p className="text-xs text-destructive">{errors.name.message}</p>
                 )}
               </div>
 
@@ -96,7 +105,7 @@ export function LoginPage() {
 
             <CardFooter className="flex-col gap-3">
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="animate-spin" />}
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Entrar
               </Button>
 
@@ -106,6 +115,15 @@ export function LoginPage() {
               >
                 Esqueceu a senha?
               </Link>
+
+              <div className="w-full border-t pt-3 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Ainda não tem conta?{' '}
+                  <Link to="/register" className="text-primary font-medium hover:underline">
+                    Criar conta grátis
+                  </Link>
+                </p>
+              </div>
             </CardFooter>
           </form>
         </Card>

@@ -4,15 +4,24 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { DashboardPage } from '@/pages/app/DashboardPage'
+import { CampaignsPage } from '@/pages/app/campaigns/CampaignsPage'
+import { CampaignDetailPage } from '@/pages/app/campaigns/CampaignDetailPage'
+import { PriceResearchPage } from '@/pages/app/PriceResearchPage'
+import { TradeMarketingPage } from '@/pages/app/TradeMarketingPage'
+import { PromotersPage } from '@/pages/app/PromotersPage'
+import { MysteryShopperPage } from '@/pages/app/MysteryShopperPage'
+import { ExpansionPage } from '@/pages/app/ExpansionPage'
+import { CompetitionPage } from '@/pages/app/CompetitionPage'
+import { MapPage } from '@/pages/app/MapPage'
+import { ReportsPage } from '@/pages/app/ReportsPage'
+import { AIRadarPage } from '@/pages/app/AIRadarPage'
+import { AlertsPage } from '@/pages/app/AlertsPage'
+import { SettingsPage } from '@/pages/app/SettingsPage'
+import { RegisterPage } from '@/pages/auth/RegisterPage'
 import { useAuth } from '@/hooks/useAuth'
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60,
-      retry: 1,
-    },
-  },
+  defaultOptions: { queries: { staleTime: 1000 * 60, retry: 1 } },
 })
 
 function AuthInit({ children }: { children: React.ReactNode }) {
@@ -28,29 +37,27 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/app" replace />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/app" element={<AppLayout />}>
-              <Route index element={<DashboardPage />} />
-              <Route path="campaigns" element={<PlaceholderPage title="Campanhas" />} />
-              <Route path="surveys" element={<PlaceholderPage title="Pesquisas" />} />
-              <Route path="interviewers" element={<PlaceholderPage title="Entrevistadores" />} />
-              <Route path="map" element={<PlaceholderPage title="Mapa" />} />
-              <Route path="ai" element={<PlaceholderPage title="Inteligência Artificial" />} />
-              <Route path="reports" element={<PlaceholderPage title="Relatórios" />} />
-              <Route path="settings" element={<PlaceholderPage title="Configurações" />} />
+              <Route index                  element={<DashboardPage />} />
+              <Route path="campaigns"       element={<CampaignsPage />} />
+              <Route path="campaigns/:id"   element={<CampaignDetailPage />} />
+              <Route path="price-research"  element={<PriceResearchPage />} />
+              <Route path="trade-marketing" element={<TradeMarketingPage />} />
+              <Route path="promoters"       element={<PromotersPage />} />
+              <Route path="mystery-shopper" element={<MysteryShopperPage />} />
+              <Route path="expansion"       element={<ExpansionPage />} />
+              <Route path="competition"     element={<CompetitionPage />} />
+              <Route path="map"             element={<MapPage />} />
+              <Route path="reports"         element={<ReportsPage />} />
+              <Route path="ai"              element={<AIRadarPage />} />
+              <Route path="alerts"          element={<AlertsPage />} />
+              <Route path="settings"        element={<SettingsPage />} />
             </Route>
           </Routes>
         </AuthInit>
       </BrowserRouter>
     </QueryClientProvider>
-  )
-}
-
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-64 gap-3">
-      <h2 className="text-xl font-semibold">{title}</h2>
-      <p className="text-muted-foreground text-sm">Esta página está sendo desenvolvida.</p>
-    </div>
   )
 }
