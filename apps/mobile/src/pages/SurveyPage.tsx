@@ -35,7 +35,6 @@ export function SurveyPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
-  const [submitError, setSubmitError] = useState('')
   const [syncStatus, setSyncStatus] = useState<'saving' | 'saved' | 'queued' | 'error'>('saving')
   const [startTime, setStartTime] = useState(Date.now())
   const [userId, setUserId] = useState<string | null>(null)
@@ -310,11 +309,6 @@ export function SurveyPage() {
 
       {/* Bottom nav */}
       <div className="bg-white border-t border-gray-100 px-5 py-4 safe-bottom">
-        {submitError && (
-          <div className="mb-3 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-            <p className="text-xs text-red-700 font-medium">{submitError}</p>
-          </div>
-        )}
         {current < questions.length - 1 ? (
           <button
             onClick={() => canAdvance && setCurrent(c => c + 1)}
