@@ -1,5 +1,6 @@
 import { FileText, Download, Search, Clock, CheckCircle, BarChart3, RefreshCw, Tag, ShoppingBag, UserCheck, Eye, Building2, BarChart2, Megaphone } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -33,6 +34,7 @@ function formatDate(iso: string) {
 
 export function ReportsPage() {
   const [search, setSearch] = useState('')
+  const navigate = useNavigate()
   const { data: campaigns = [], isLoading } = useCampaigns()
   const { data: moduleSummary } = useModuleSummary()
 
@@ -178,7 +180,7 @@ export function ReportsPage() {
                     <td className="px-4 py-3 text-right text-muted-foreground text-xs">{r.date}</td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Ver detalhes">
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Ver análise" onClick={() => navigate(`/app/campaigns/${r.id}/analysis`)}>
                           <BarChart3 className="h-3.5 w-3.5" />
                         </Button>
                         <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Exportar — em desenvolvimento" disabled>

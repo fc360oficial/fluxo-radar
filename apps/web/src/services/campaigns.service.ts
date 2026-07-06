@@ -96,13 +96,38 @@ export const campaignsService = {
   },
 
   async getInterviewers(campaign_id: string) {
-    const { data, error } = await supabase
-      .from('interviewer_ranking')
-      .select('*')
+    const { data: surveys } = await supabase
+      .from('surveys')
+      .select('interviewer_id, surveyed_at')
       .eq('campaign_id', campaign_id)
-      .order('total', { ascending: false })
-    if (error) throw error
-    return data
+      .eq('is_valid', true)
+
+    if (!surveys?.length) return []
+
+    const todayBR = new Date().toLocaleDateString('pt-BR')
+    const stats: Record<string, { total: number; today: number; last: string }> = {}
+    for (const s of surveys) {
+      const id = s.interviewer_id as string
+      if (!stats[id]) stats[id] = { total: 0, today: 0, last: '' }
+      stats[id].total++
+      if (new Date(s.surveyed_at as string).toLocaleDateString('pt-BR') === todayBR) stats[id].today++
+      if ((s.surveyed_at as string) > stats[id].last) stats[id].last = s.surveyed_at as string
+    }
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, name, avatar_url')
+      .in('id', Object.keys(stats))
+    if (!profiles) return []
+
+    return profiles.map(p => ({
+      interviewer_id: p.id,
+      name: p.name,
+      avatar_url: p.avatar_url,
+      total: stats[p.id]?.total ?? 0,
+      today: stats[p.id]?.today ?? 0,
+      last_survey_at: stats[p.id]?.last ?? null,
+    })).sort((a, b) => b.total - a.total)
   },
 
   async getSupervisors() {

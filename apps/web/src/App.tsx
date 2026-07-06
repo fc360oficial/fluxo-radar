@@ -6,6 +6,7 @@ import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { DashboardPage } from '@/pages/app/DashboardPage'
 import { CampaignsPage } from '@/pages/app/campaigns/CampaignsPage'
 import { CampaignDetailPage } from '@/pages/app/campaigns/CampaignDetailPage'
+import { CampaignAnalysisPage } from '@/pages/app/campaigns/CampaignAnalysisPage'
 import { PriceResearchPage } from '@/pages/app/PriceResearchPage'
 import { TradeMarketingPage } from '@/pages/app/TradeMarketingPage'
 import { PromotersPage } from '@/pages/app/PromotersPage'
@@ -42,7 +43,8 @@ export default function App() {
             <Route path="/app" element={<AppLayout />}>
               <Route index                  element={<DashboardPage />} />
               <Route path="campaigns"       element={<CampaignsPage />} />
-              <Route path="campaigns/:id"   element={<CampaignDetailPage />} />
+              <Route path="campaigns/:id"          element={<CampaignDetailPage />} />
+              <Route path="campaigns/:id/analysis" element={<CampaignAnalysisPage />} />
               <Route path="price-research"  element={<PriceResearchPage />} />
               <Route path="trade-marketing" element={<TradeMarketingPage />} />
               <Route path="promoters"       element={<PromotersPage />} />
