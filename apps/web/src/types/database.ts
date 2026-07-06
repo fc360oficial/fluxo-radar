@@ -33,6 +33,7 @@ export interface Campaign {
   completed_at: string | null; cancelled_at: string | null
   cancelled_by: string | null; created_by: string
   created_at: string; updated_at: string
+  total_surveys?: number
 }
 
 export interface Survey {
