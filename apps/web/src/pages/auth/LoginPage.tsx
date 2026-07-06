@@ -3,16 +3,15 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 const schema = z.object({
-  name: z.string().min(2, 'Informe seu nome completo'),
+  email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Senha deve ter ao menos 6 caracteres'),
 })
 
@@ -22,6 +21,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const { signIn } = useAuth()
   const [serverError, setServerError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -29,18 +29,9 @@ export function LoginPage() {
 
   async function onSubmit(data: FormData) {
     setServerError(null)
-
-    // Busca o email pelo nome no banco
-    const { data: email, error: rpcError } = await supabase.rpc('get_email_by_name', { p_name: data.name })
-
-    if (rpcError || !email) {
-      setServerError('Nome não encontrado. Verifique o nome cadastrado.')
-      return
-    }
-
-    const { error } = await signIn(email as string, data.password)
+    const { error } = await signIn(data.email, data.password)
     if (error) {
-      setServerError('Senha incorreta.')
+      setServerError('Email ou senha incorretos.')
     } else {
       navigate('/app')
     }
@@ -63,7 +54,7 @@ export function LoginPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Entrar</CardTitle>
-            <CardDescription>Use seu nome e senha para acessar</CardDescription>
+            <CardDescription>Use seu email e senha para acessar</CardDescription>
           </CardHeader>
 
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -75,28 +66,38 @@ export function LoginPage() {
               )}
 
               <div className="space-y-1.5">
-                <Label htmlFor="name">Seu nome</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="name"
-                  type="text"
-                  placeholder="Ex: Tiago Freire"
-                  autoComplete="name"
-                  {...register('name')}
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                  {...register('email')}
                 />
-                {errors.name && (
-                  <p className="text-xs text-destructive">{errors.name.message}</p>
+                {errors.email && (
+                  <p className="text-xs text-destructive">{errors.email.message}</p>
                 )}
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  {...register('password')}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    className="pr-10"
+                    {...register('password')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 {errors.password && (
                   <p className="text-xs text-destructive">{errors.password.message}</p>
                 )}
