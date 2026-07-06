@@ -12,7 +12,7 @@ const KEYS = {
 }
 
 export function useCampaigns() {
-  return useQuery({ queryKey: KEYS.list(), queryFn: campaignsService.list })
+  return useQuery({ queryKey: KEYS.list(), queryFn: campaignsService.listRaw })
 }
 
 export function useCampaignProgress(id: string) {
