@@ -43,7 +43,7 @@ export function LoginPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <img src="/logo.png" alt="Fluxo Radar" className="h-32 object-contain" />
+          <img src="/logo.png" alt="Fluxo Radar" className="h-48 w-48 object-contain" />
           <div>
             <h1 className="text-xl font-black tracking-tight">Fluxo Radar</h1>
             <p className="text-sm font-medium text-muted-foreground">Pesquisa de Mercado</p>
