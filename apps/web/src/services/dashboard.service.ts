@@ -31,6 +31,8 @@ export interface TeamMember {
   last_location:  string
   last_active_at: string
   field_status:   'online' | 'paused' | 'offline'
+  lat:            number | null
+  lng:            number | null
 }
 
 export interface ChartPoint { name: string; value: number; color: string }

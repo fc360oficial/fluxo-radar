@@ -109,7 +109,7 @@ export function MapPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
                       <p className="text-xs font-semibold truncate">{person.name}</p>
-                      {!hasCoords && <MapPin className="h-3 w-3 text-muted-foreground shrink-0" title="Sem GPS" />}
+                      {!hasCoords && <span title="Sem GPS"><MapPin className="h-3 w-3 text-muted-foreground shrink-0" /></span>}
                     </div>
                     <p className="text-[10px] text-muted-foreground truncate">{person.last_location || person.last_action}</p>
                   </div>
