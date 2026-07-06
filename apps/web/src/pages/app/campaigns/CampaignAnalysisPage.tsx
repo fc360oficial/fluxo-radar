@@ -141,7 +141,6 @@ const SWITCH_LABELS: Record<string, string> = {
 const FREQ_LABELS: Record<string, string> = {
   daily: 'Todos os dias', '2_3_week': '2 a 3x por semana', weekly: 'Semanalmente', monthly: 'Mensalmente',
 }
-const INTENTION_LABELS: Record<string, string> = { yes: 'Sim', maybe: 'Talvez', no: 'Não' }
 const FEATURE_LABELS: Record<string, string> = {
   butcher: 'Açougue próprio', bakery: 'Padaria', parking: 'Estacionamento', delivery: 'Delivery',
   self_checkout: 'Autoatendimento', loyalty: 'Programa de fidelidade', organic: 'Produtos orgânicos',
@@ -175,7 +174,6 @@ function generateAnalysis(surveys: Record<string, unknown>[], campaignName: stri
 
   // Q4 — transporte
   const q4 = countValues(surveys, 'q4_transport')
-  const topTransp = q4[0] ? label(TRANSPORT_LABELS, q4[0].name) : '—'
   const topTranspPct = q4.slice(0, 2).map(d => `${label(TRANSPORT_LABELS, d.name)} (${pct(d.value)}%)`).join(' e ')
 
   // Q5 — razões de troca
