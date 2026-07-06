@@ -24,12 +24,16 @@ export const campaignsService = {
   },
 
   async listRaw() {
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select('*, responsible:profiles!campaigns_responsible_id_fkey(id, name, avatar_url)')
-      .order('created_at', { ascending: false })
+    const [{ data: campaigns, error }, { data: surveyCounts }] = await Promise.all([
+      supabase.from('campaigns').select('*, responsible:profiles!campaigns_responsible_id_fkey(id, name, avatar_url)').order('created_at', { ascending: false }),
+      supabase.from('surveys').select('campaign_id').eq('is_valid', true),
+    ])
     if (error) throw error
-    return data as (Campaign & { responsible: { id: string; name: string; avatar_url: string | null } })[]
+    const countMap: Record<string, number> = {}
+    for (const s of surveyCounts ?? []) {
+      countMap[s.campaign_id as string] = (countMap[s.campaign_id as string] ?? 0) + 1
+    }
+    return (campaigns ?? []).map(c => ({ ...c, total_surveys: countMap[c.id] ?? 0 })) as (Campaign & { responsible: { id: string; name: string; avatar_url: string | null }; total_surveys: number })[]
   },
 
   async getById(id: string) {
