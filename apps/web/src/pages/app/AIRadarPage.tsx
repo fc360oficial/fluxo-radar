@@ -1,6 +1,5 @@
-import { Sparkles, TrendingUp, TrendingDown, AlertTriangle, MapPin, DollarSign, BarChart2, Eye, ShoppingBag, RefreshCw } from 'lucide-react'
+import { Sparkles, TrendingUp, AlertTriangle, MapPin, DollarSign, BarChart2, Eye, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { useIaSummary, useModuleSummary } from '@/hooks/useDashboard'
 
 const PRIORITY_COLORS: Record<string, string> = {

@@ -3,7 +3,7 @@ import {
   Users, Megaphone, MapPin, ClipboardCheck, Tag, DollarSign,
   AlertTriangle, Sparkles, Search, ShoppingBag, UserCheck, Eye,
   Building2, BarChart2, TrendingUp, TrendingDown, ArrowRight,
-  CheckCircle2, Clock, Star, ChevronRight, ListTodo,
+  Star, ChevronRight, ListTodo,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import {
