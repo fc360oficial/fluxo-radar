@@ -76,12 +76,18 @@ export function SurveyPage() {
     setAnswers(prev => ({ ...prev, [questionId]: value }))
   }
 
-  function toggleMulti(questionId: string, option: string) {
-    const current_ = (answers[questionId] as string[] | undefined) ?? []
-    const next = current_.includes(option)
-      ? current_.filter(o => o !== option)
-      : [...current_, option]
-    setAnswer(questionId, next)
+  function maxForQuestion(q: Question) {
+    return q.field_key === 'q8_new_store_features' ? 3 : 1
+  }
+
+  function toggleMulti(question: Question, option: string) {
+    const max = maxForQuestion(question)
+    const current_ = (answers[question.id] as string[] | undefined) ?? []
+    if (current_.includes(option)) {
+      setAnswer(question.id, current_.filter(o => o !== option))
+    } else if (current_.length < max) {
+      setAnswer(question.id, [...current_, option])
+    }
   }
 
   const q = questions[current]
@@ -279,17 +285,23 @@ export function SurveyPage() {
         {/* Multiple choice */}
         {q.question_type === 'multiple_choice' && q.options && (
           <div className="space-y-2">
-            <p className="text-xs text-gray-400 mb-3">Selecione todas que se aplicam</p>
+            {q.field_key === 'q8_new_store_features'
+              ? <p className="text-xs text-gray-400 mb-3">Selecione até 3 opções</p>
+              : <p className="text-xs text-gray-400 mb-3">Selecione 1 opção</p>
+            }
             {q.options.map((opt) => {
               const selected = ((answer as string[] | undefined) ?? []).includes(opt)
+              const maxReached = maxForQuestion(q) === ((answer as string[] | undefined) ?? []).length && !selected
               return (
                 <button
                   key={opt}
-                  onClick={() => toggleMulti(q.id, opt)}
+                  onClick={() => toggleMulti(q, opt)}
                   className={`w-full text-left px-4 py-3.5 rounded-2xl border-2 text-sm font-medium transition-all ${
                     selected
                       ? 'border-amber-400 bg-amber-50 text-amber-800'
-                      : 'border-gray-100 bg-white text-gray-700 active:bg-gray-50'
+                      : maxReached
+                        ? 'border-gray-100 bg-white text-gray-300'
+                        : 'border-gray-100 bg-white text-gray-700 active:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center gap-3">

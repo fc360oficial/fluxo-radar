@@ -125,47 +125,120 @@ function EmptyCard({ title }: { title: string }) {
   )
 }
 
+// ── label maps ────────────────────────────────────────────────────────────────
+const REASON_LABELS: Record<string, string> = {
+  price: 'Preço', quality: 'Qualidade', butcher: 'Açougue', bakery: 'Padaria',
+  location: 'Localização', service: 'Atendimento', promotions: 'Promoções', other: 'Outro',
+}
+const TRANSPORT_LABELS: Record<string, string> = {
+  foot: 'A pé', car: 'Carro', motorcycle: 'Moto', bicycle: 'Bicicleta', uber: 'Aplicativo', bus: 'Ônibus',
+}
+const SWITCH_LABELS: Record<string, string> = {
+  price: 'Preço melhor', better_butcher: 'Açougue melhor', better_bakery: 'Padaria melhor',
+  more_variety: 'Mais variedade', service: 'Melhor atendimento', delivery: 'Delivery',
+  promotions: 'Mais promoções', organized_store: 'Loja organizada',
+}
+const FREQ_LABELS: Record<string, string> = {
+  daily: 'Todos os dias', '2_3_week': '2 a 3x por semana', weekly: 'Semanalmente', monthly: 'Mensalmente',
+}
+const INTENTION_LABELS: Record<string, string> = { yes: 'Sim', maybe: 'Talvez', no: 'Não' }
+const FEATURE_LABELS: Record<string, string> = {
+  butcher: 'Açougue próprio', bakery: 'Padaria', parking: 'Estacionamento', delivery: 'Delivery',
+  self_checkout: 'Autoatendimento', loyalty: 'Programa de fidelidade', organic: 'Produtos orgânicos',
+  price: 'Preço baixo', variety: 'Variedade', cleanliness: 'Limpeza', service: 'Bom atendimento',
+}
+
+function label(map: Record<string, string>, key: string) {
+  return map[key] ?? key
+}
+
+interface AnalysisSection { icon: string; title: string; text: string; highlight?: string }
+
+function generateAnalysis(surveys: Record<string, unknown>[], campaignName: string): AnalysisSection[] {
+  const n = surveys.length
+  if (n === 0) return []
+
+  const pct = (v: number) => Math.round((v / n) * 100)
+
+  // Q1 — supermercados
+  const q1 = countValues(surveys, 'q1_main_supermarket')
+  const topSuper = q1[0]
+  const top3Supers = q1.slice(0, 3).map(d => `${d.name} (${pct(d.value)}%)`).join(', ')
+
+  // Q2 — motivo de escolha
+  const q2 = countValues(surveys, 'q2_main_reason')
+  const topMotivo = q2[0] ? label(REASON_LABELS, q2[0].name) : '—'
+  const topMotivosPct = q2.slice(0, 3).map(d => `${label(REASON_LABELS, d.name)} ${pct(d.value)}%`).join(', ')
+
+  // Q3 — reclamações (texto livre)
+  const q3 = topText(surveys, 'q3_complaint', 3)
+
+  // Q4 — transporte
+  const q4 = countValues(surveys, 'q4_transport')
+  const topTransp = q4[0] ? label(TRANSPORT_LABELS, q4[0].name) : '—'
+  const topTranspPct = q4.slice(0, 2).map(d => `${label(TRANSPORT_LABELS, d.name)} (${pct(d.value)}%)`).join(' e ')
+
+  // Q5 — razões de troca
+  const q5 = countValues(surveys, 'q5_switch_reasons')
+  const topSwitch = q5.slice(0, 3).map(d => `${label(SWITCH_LABELS, d.name)} (${pct(d.value)}%)`).join(', ')
+
+  // Q6 — frequência
+  const q6 = countValues(surveys, 'q6_frequency')
+  const topFreq = q6[0] ? label(FREQ_LABELS, q6[0].name) : '—'
+
+  // Q7 — intenção
+  const q7 = countValues(surveys, 'q7_intention')
+  const yesCount = q7.find(d => d.name === 'yes')?.value ?? 0
+  const maybeCount = q7.find(d => d.name === 'maybe')?.value ?? 0
+  const noCount = q7.find(d => d.name === 'no')?.value ?? 0
+  const positiveRate = pct(yesCount + maybeCount)
+  const viability = positiveRate >= 70 ? 'ALTA' : positiveRate >= 50 ? 'MÉDIA' : 'BAIXA'
+  const viabilityColor = positiveRate >= 70 ? '🟢' : positiveRate >= 50 ? '🟡' : '🔴'
+
+  // Q8 — diferenciais
+  const q8 = countValues(surveys, 'q8_new_store_features')
+  const topFeatures = q8.slice(0, 3).map(d => `${label(FEATURE_LABELS, d.name)} (${pct(d.value)}%)`).join(', ')
+
+  return [
+    {
+      icon: '👥',
+      title: 'Perfil do consumidor',
+      text: `Com base em ${n} entrevistas da campanha ${campaignName}, o comprador típico da área se desloca principalmente ${topTranspPct} e vai ao supermercado ${topFreq.toLowerCase()}. O critério de escolha mais valorizado é ${topMotivo.toLowerCase()} — citado em ${pct(q2[0]?.value ?? 0)}% das respostas.`,
+    },
+    {
+      icon: '🏪',
+      title: 'Concorrentes dominantes',
+      text: topSuper
+        ? `O supermercado mais frequentado é ${topSuper.name}, com ${pct(topSuper.value)}% dos entrevistados. Os 3 líderes da região são: ${top3Supers}. Os consumidores escolhem esses estabelecimentos principalmente por: ${topMotivosPct}.`
+        : 'Dados insuficientes para identificar os concorrentes.',
+    },
+    {
+      icon: '⚡',
+      title: 'Oportunidades identificadas',
+      text: `Os principais fatores que levariam um consumidor a trocar de supermercado são: ${topSwitch || '—'}. ${q3.length ? `As reclamações mais citadas incluem: "${q3[0][0]}"${q3[1] ? ` e "${q3[1][0]}"` : ''} — pontos que representam lacunas que uma nova loja pode explorar.` : ''}`,
+    },
+    {
+      icon: '🎯',
+      title: 'O que buscam em uma nova loja',
+      text: `Os diferenciais mais desejados são: ${topFeatures || '—'}. Esses itens devem ser priorizados no projeto de uma nova loja para atrair clientes da concorrência.`,
+    },
+    {
+      icon: viabilityColor,
+      title: `Viabilidade de abertura — ${viability}`,
+      text: `${pct(yesCount)}% afirmaram que comprariam em uma nova loja na área, e ${pct(maybeCount)}% disseram "talvez" — totalizando ${positiveRate}% de intenção positiva. Apenas ${pct(noCount)}% descartam a possibilidade. ${positiveRate >= 70 ? 'Os dados indicam forte receptividade do mercado para uma nova operação.' : positiveRate >= 50 ? 'Há abertura moderada do mercado — uma entrada com proposta diferenciada tem boas chances.' : 'O mercado apresenta menor receptividade — recomenda-se aprofundar a análise antes de prosseguir.'}`,
+      highlight: `${positiveRate}% de intenção positiva`,
+    },
+  ]
+}
+
 // ── AI analysis ────────────────────────────────────────────────────────────────
 function AIAnalysis({ surveys, campaignName }: { surveys: Record<string, unknown>[]; campaignName: string }) {
-  const [result, setResult] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [generated, setGenerated] = useState(false)
 
-  async function analyze() {
-    if (!surveys.length) return
-    setLoading(true)
-    setResult('')
-
-    const summary = {
-      total: surveys.length,
-      supermercados: countValues(surveys, 'q1_main_supermarket').slice(0, 5),
-      motivos: countValues(surveys, 'q2_main_reason'),
-      reclamacoes: topText(surveys, 'q3_complaint', 5),
-      transporte: countValues(surveys, 'q4_transport'),
-      razoes_troca: countValues(surveys, 'q5_switch_reasons'),
-      frequencia: countValues(surveys, 'q6_frequency'),
-      intencao: countValues(surveys, 'q7_intention'),
-      diferenciais: countValues(surveys, 'q8_new_store_features'),
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-campaign`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({ campaignName, summary }),
-      })
-      const json = await res.json()
-      setResult(json.analysis ?? 'Erro ao gerar análise.')
-    } catch {
-      setResult('Erro ao conectar com a IA. Tente novamente.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const sections = useMemo(
+    () => generated ? generateAnalysis(surveys, campaignName) : [],
+    [generated, surveys, campaignName]
+  )
 
   return (
     <div className="space-y-4">
@@ -173,15 +246,15 @@ function AIAnalysis({ surveys, campaignName }: { surveys: Record<string, unknown
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
             <h3 className="font-semibold flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" /> Análise por IA
+              <Sparkles className="h-4 w-4 text-primary" /> Análise Radar
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
               Baseada em {surveys.length} entrevista{surveys.length !== 1 ? 's' : ''} coletadas
             </p>
           </div>
-          <Button onClick={analyze} disabled={loading || surveys.length === 0} className="gap-2 shrink-0">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {loading ? 'Analisando...' : result ? 'Reanalisar' : 'Gerar análise'}
+          <Button onClick={() => setGenerated(true)} disabled={surveys.length === 0} className="gap-2 shrink-0">
+            <Sparkles className="h-4 w-4" />
+            {generated ? 'Reanalisar' : 'Gerar análise'}
           </Button>
         </div>
 
@@ -191,19 +264,25 @@ function AIAnalysis({ surveys, campaignName }: { surveys: Record<string, unknown
           </p>
         )}
 
-        {!result && !loading && surveys.length > 0 && (
+        {!generated && surveys.length > 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <Sparkles className="h-10 w-10 mx-auto mb-3 opacity-20" />
-            <p className="text-sm">Clique em "Gerar análise" para obter insights inteligentes dos dados coletados.</p>
+            <p className="text-sm">Clique em "Gerar análise" para obter insights dos dados coletados.</p>
           </div>
         )}
 
-        {result && (
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            {result.split('\n').map((line, i) => (
-              <p key={i} className={`text-sm ${line.startsWith('**') ? 'font-semibold text-foreground' : 'text-muted-foreground'} mb-2`}>
-                {line.replace(/\*\*/g, '')}
-              </p>
+        {generated && sections.length > 0 && (
+          <div className="space-y-4">
+            {sections.map((s, i) => (
+              <div key={i} className="border rounded-lg p-4">
+                <p className="font-semibold text-sm mb-1.5">{s.icon} {s.title}</p>
+                {s.highlight && (
+                  <div className="inline-flex items-center bg-primary/10 text-primary text-xs font-bold px-2.5 py-1 rounded-full mb-2">
+                    {s.highlight}
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground leading-relaxed">{s.text}</p>
+              </div>
             ))}
           </div>
         )}
