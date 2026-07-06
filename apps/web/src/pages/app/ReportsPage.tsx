@@ -1,4 +1,4 @@
-import { FileText, Download, Search, Clock, CheckCircle, BarChart3, RefreshCw, Tag, ShoppingBag, UserCheck, Eye, Building2, BarChart2, Megaphone } from 'lucide-react'
+import { FileText, Download, Search, Clock, CheckCircle, BarChart3, RefreshCw, Tag, ShoppingBag, UserCheck, Eye, Building2, BarChart2, Megaphone, Printer, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useCampaigns } from '@/hooks/useCampaigns'
 import { useModuleSummary } from '@/hooks/useDashboard'
 import type { ModuleSummary } from '@/services/dashboard.service'
+import { supabase } from '@/lib/supabase'
+import { exportCSV } from './campaigns/CampaignReportPage'
 
 const TYPE_COLORS: Record<string, string> = {
   'Pesquisa de Mercado': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
@@ -34,9 +36,20 @@ function formatDate(iso: string) {
 
 export function ReportsPage() {
   const [search, setSearch] = useState('')
+  const [loadingCSV, setLoadingCSV] = useState<string | null>(null)
   const navigate = useNavigate()
   const { data: campaigns = [], isLoading } = useCampaigns()
   const { data: moduleSummary } = useModuleSummary()
+
+  async function handleExportCSV(id: string, name: string) {
+    setLoadingCSV(id)
+    try {
+      const { data } = await supabase.from('surveys').select('*').eq('campaign_id', id).eq('is_valid', true)
+      exportCSV((data ?? []) as Record<string, unknown>[], name)
+    } finally {
+      setLoadingCSV(null)
+    }
+  }
 
   // Each campaign maps to a "report" entry
   const reports = campaigns.map((c) => ({
@@ -183,8 +196,11 @@ export function ReportsPage() {
                         <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Ver análise" onClick={() => navigate(`/app/campaigns/${r.id}/analysis`)}>
                           <BarChart3 className="h-3.5 w-3.5" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Exportar — em desenvolvimento" disabled>
-                          <Download className="h-3.5 w-3.5" />
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Exportar CSV" onClick={() => handleExportCSV(r.id, r.name)} disabled={loadingCSV === r.id}>
+                          {loadingCSV === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Imprimir relatório" onClick={() => navigate(`/campaigns/${r.id}/report`)}>
+                          <Printer className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </td>

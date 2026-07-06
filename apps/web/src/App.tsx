@@ -7,6 +7,7 @@ import { DashboardPage } from '@/pages/app/DashboardPage'
 import { CampaignsPage } from '@/pages/app/campaigns/CampaignsPage'
 import { CampaignDetailPage } from '@/pages/app/campaigns/CampaignDetailPage'
 import { CampaignAnalysisPage } from '@/pages/app/campaigns/CampaignAnalysisPage'
+import { CampaignReportPage } from '@/pages/app/campaigns/CampaignReportPage'
 import { PriceResearchPage } from '@/pages/app/PriceResearchPage'
 import { TradeMarketingPage } from '@/pages/app/TradeMarketingPage'
 import { PromotersPage } from '@/pages/app/PromotersPage'
@@ -37,6 +38,7 @@ export default function App() {
         <AuthInit>
           <Routes>
             <Route path="/" element={<Navigate to="/app" replace />} />
+            <Route path="/campaigns/:id/report" element={<CampaignReportPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
