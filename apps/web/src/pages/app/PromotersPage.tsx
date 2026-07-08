@@ -855,38 +855,47 @@ export function PromotersPage() {
 
       {/* ── QR Code por loja ── */}
       <div className="bg-card border rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <div className="flex items-center gap-2.5">
-            <QrCode className="h-5 w-5 text-primary shrink-0" />
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-bold">Check-in Inteligente</p>
-                <span className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold">Em desenvolvimento</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                QR Codes exclusivos por loja — promotores escaneiam para registrar entrada e saída
-              </p>
-            </div>
+        <div className="flex items-center gap-2.5 mb-4">
+          <QrCode className="h-5 w-5 text-primary shrink-0" />
+          <div>
+            <p className="text-sm font-bold">Check-in Inteligente</p>
+            <p className="text-xs text-muted-foreground">
+              QR Code gerado por loja após o agendamento — promotores escaneiam para registrar entrada e saída
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {Array.from(new Set(VISITS.map(v => v.store))).sort().map(store => (
-            <button
-              key={store}
-              onClick={() => setQrStore(store)}
-              className="group border rounded-xl p-3 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center gap-2 text-center"
-            >
-              <div className="bg-white rounded-lg p-2 border group-hover:border-primary/30 transition-colors">
-                <QRCodeSVG value={storeCheckinUrl(store)} size={72} />
+        {(() => {
+          const stores = Array.from(new Set(VISITS.map(v => v.store))).sort()
+          if (stores.length === 0) {
+            return (
+              <div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
+                <QrCode className="h-8 w-8 opacity-20" />
+                <p className="text-sm">Nenhum QR Code gerado ainda</p>
+                <p className="text-xs opacity-60">Os QR Codes aparecem aqui automaticamente conforme as lojas forem agendadas</p>
               </div>
-              <p className="text-xs font-semibold leading-tight">{store}</p>
-              <span className="text-[10px] text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-1">
-                <Printer className="h-3 w-3" /> Ver / Imprimir
-              </span>
-            </button>
-          ))}
-        </div>
+            )
+          }
+          return (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {stores.map(store => (
+                <button
+                  key={store}
+                  onClick={() => setQrStore(store)}
+                  className="group border rounded-xl p-3 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center gap-2 text-center"
+                >
+                  <div className="bg-white rounded-lg p-2 border group-hover:border-primary/30 transition-colors">
+                    <QRCodeSVG value={storeCheckinUrl(store)} size={72} />
+                  </div>
+                  <p className="text-xs font-semibold leading-tight">{store}</p>
+                  <span className="text-[10px] text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-1">
+                    <Printer className="h-3 w-3" /> Ver / Imprimir
+                  </span>
+                </button>
+              ))}
+            </div>
+          )
+        })()}
 
         <p className="text-[11px] text-muted-foreground mt-4 border-t pt-3">
           Fixe o QR Code na entrada de cada loja. O promotor escaneia com o celular para registrar check-in e check-out automaticamente. O sistema registrará: loja, data, hora, tempo em loja e localização (GPS).
