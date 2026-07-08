@@ -16,7 +16,7 @@ const moduleItems = [
   { to: '/app/campaigns',        icon: Search,      label: 'Pesquisa de Mercado' },
   { to: '/app/price-research',   icon: Tag,         label: 'Pesquisa de Preços' },
   { to: '/app/trade-marketing',  icon: ShoppingBag, label: 'Trade Marketing' },
-  { to: '/app/promoters',        icon: UserCheck,   label: 'Promotores' },
+  { to: '/app/promoters',        icon: UserCheck,   label: 'Gestão de Promotores' },
   { to: '/app/mystery-shopper',  icon: Eye,         label: 'Cliente Oculto' },
   { to: '/app/expansion',        icon: Building2,   label: 'Expansão' },
   { to: '/app/competition',      icon: BarChart2,   label: 'Concorrência' },
