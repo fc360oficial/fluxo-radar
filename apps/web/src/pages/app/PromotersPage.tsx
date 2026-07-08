@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { usePromoterVisits, useCreatePromoterVisit } from '@/hooks/usePromoters'
 import {
   Calendar, CalendarDays, CheckCircle, ChevronLeft, ChevronRight,
   MapPin, Plus, QrCode, Search, Users, X, Phone, Mail, Building2,
@@ -211,27 +212,42 @@ interface AppointmentForm {
   end_date: string; days: string[]
 }
 
-function NewAppointmentModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function NewAppointmentModal({ open, onClose, onSave }: {
+  open: boolean
+  onClose: () => void
+  onSave: (form: AppointmentForm) => Promise<void>
+}) {
   const [form, setForm] = useState<AppointmentForm>({ supplier:'', promoter_name:'', phone:'', email:'', store:'', date:TODAY, time:'09:00', periodicity:'weekly', end_date:'', days:[] })
+  const [saving, setSaving] = useState(false)
+  const [error, setError]   = useState<string | null>(null)
   const DAYS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom']
   function field(k: keyof AppointmentForm, v: string) { setForm(f => ({ ...f, [k]: v })) }
   function toggleDay(d: string) { setForm(f => ({ ...f, days: f.days.includes(d) ? f.days.filter(x => x !== d) : [...f.days, d] })) }
+  async function handleSave() {
+    if (!form.supplier || !form.promoter_name || !form.store || !form.date) {
+      setError('Preencha fornecedor, promotor, loja e data.'); return
+    }
+    setSaving(true); setError(null)
+    try { await onSave(form); onClose() }
+    catch { setError('Erro ao salvar. Tente novamente.') }
+    finally { setSaving(false) }
+  }
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle className="flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /> Novo Agendamento</DialogTitle></DialogHeader>
         <div className="space-y-4 py-1">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label>Fornecedor</Label><Input placeholder="ex: Nestlé, Coca-Cola…" value={form.supplier} onChange={e => field('supplier', e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Nome do Promotor</Label><Input placeholder="Nome completo" value={form.promoter_name} onChange={e => field('promoter_name', e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>Fornecedor <span className="text-destructive">*</span></Label><Input placeholder="ex: Nestlé, Coca-Cola…" value={form.supplier} onChange={e => field('supplier', e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>Nome do Promotor <span className="text-destructive">*</span></Label><Input placeholder="Nome completo" value={form.promoter_name} onChange={e => field('promoter_name', e.target.value)} /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label className="flex items-center gap-1.5"><Phone className="h-3 w-3" />Telefone</Label><Input placeholder="(81) 99999-9999" value={form.phone} onChange={e => field('phone', e.target.value)} /></div>
             <div className="space-y-1.5"><Label className="flex items-center gap-1.5"><Mail className="h-3 w-3" />E-mail</Label><Input type="email" placeholder="promotor@fornecedor.com" value={form.email} onChange={e => field('email', e.target.value)} /></div>
           </div>
-          <div className="space-y-1.5"><Label className="flex items-center gap-1.5"><Building2 className="h-3 w-3" />Loja</Label><Input placeholder="Nome da loja" value={form.store} onChange={e => field('store', e.target.value)} /></div>
+          <div className="space-y-1.5"><Label className="flex items-center gap-1.5"><Building2 className="h-3 w-3" />Loja <span className="text-destructive">*</span></Label><Input placeholder="Nome da loja" value={form.store} onChange={e => field('store', e.target.value)} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label>Data inicial</Label><Input type="date" value={form.date} onChange={e => field('date', e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>Data inicial <span className="text-destructive">*</span></Label><Input type="date" value={form.date} onChange={e => field('date', e.target.value)} /></div>
             <div className="space-y-1.5"><Label>Horário</Label><Input type="time" value={form.time} onChange={e => field('time', e.target.value)} /></div>
           </div>
           <div className="space-y-1.5">
@@ -260,10 +276,13 @@ function NewAppointmentModal({ open, onClose }: { open: boolean; onClose: () => 
             </div>
             <div className="space-y-1.5"><Label>Data final</Label><Input type="date" value={form.end_date} onChange={e => field('end_date', e.target.value)} /></div>
           </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={onClose} className="gap-2"><CheckCircle className="h-4 w-4" /> Salvar Agendamento</Button>
+          <Button variant="outline" onClick={onClose} disabled={saving}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            {saving ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> Salvando…</> : <><CheckCircle className="h-4 w-4" /> Salvar Agendamento</>}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -401,6 +420,29 @@ export function PromotersPage() {
   const [qrStore, setQrStore]           = useState<string | null>(null)
   const [tick, setTick]                 = useState(0)
 
+  // Real data from Supabase
+  const { data: realVisits, isLoading, error: visitsError } = usePromoterVisits()
+  const createVisit = useCreatePromoterVisit()
+
+  const handleSaveAppointment = useCallback(async (form: AppointmentForm) => {
+    await createVisit.mutateAsync({
+      supplier_name:   form.supplier,
+      promoter_name:   form.promoter_name,
+      promoter_phone:  form.phone || undefined,
+      promoter_email:  form.email || undefined,
+      store_name:      form.store,
+      visit_date:      form.date,
+      scheduled_time:  form.time || undefined,
+      status:          'scheduled',
+    })
+  }, [createVisit])
+
+  // Use real data if available, otherwise show mock data (demo mode)
+  const usingMock = !isLoading && (visitsError !== null || (realVisits?.length === 0 && true))
+  const VISITS: SupplierVisit[] = (!isLoading && realVisits && realVisits.length > 0)
+    ? (realVisits as unknown as SupplierVisit[])
+    : MOCK_VISITS
+
   // Refresh elapsed time every minute
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 60_000)
@@ -408,7 +450,7 @@ export function PromotersPage() {
   }, [])
 
   // KPIs — today only
-  const todayVisits = MOCK_VISITS.filter(v => v.date === TODAY)
+  const todayVisits = VISITS.filter(v => v.date === TODAY)
   const todayCompleted = todayVisits.filter(v => v.status === 'completed' || v.status === 'in_store').length
   const todayMissed    = todayVisits.filter(v => v.status === 'missed').length
   const progressToday  = todayVisits.length > 0 ? Math.round((todayCompleted / todayVisits.length) * 100) : 0
@@ -416,7 +458,7 @@ export function PromotersPage() {
   // Filtered list
   const filtered = useMemo(() => {
     const next7End = localDate(7)
-    return MOCK_VISITS
+    return VISITS
       .filter(v => {
         if (filter === 'today')     return v.date === TODAY
         if (filter === 'scheduled') return v.status === 'scheduled'
@@ -434,12 +476,12 @@ export function PromotersPage() {
       )
       .sort((a, b) => b.date.localeCompare(a.date) || (a.scheduled_time ?? '').localeCompare(b.scheduled_time ?? ''))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, search, tick])
+  }, [filter, search, tick, VISITS])
 
   // ── Indicator calculations ────────────────────────────────────────────────
   const supplierCompliance = useMemo(() => {
     const map: Record<string, { planned: number; realized: number; missed: number }> = {}
-    MOCK_VISITS.forEach(v => {
+    VISITS.forEach(v => {
       if (!map[v.supplier]) map[v.supplier] = { planned: 0, realized: 0, missed: 0 }
       map[v.supplier].planned++
       if (v.status === 'completed' || v.status === 'in_store') map[v.supplier].realized++
@@ -448,11 +490,11 @@ export function PromotersPage() {
     return Object.entries(map)
       .map(([supplier, s]) => ({ supplier, ...s, rate: Math.round((s.realized / s.planned) * 100) }))
       .sort((a, b) => b.rate - a.rate)
-  }, [])
+  }, [VISITS])
 
   const storeCompliance = useMemo(() => {
     const map: Record<string, { planned: number; realized: number }> = {}
-    MOCK_VISITS.forEach(v => {
+    VISITS.forEach(v => {
       if (!map[v.store]) map[v.store] = { planned: 0, realized: 0 }
       map[v.store].planned++
       if (v.status === 'completed' || v.status === 'in_store') map[v.store].realized++
@@ -460,11 +502,11 @@ export function PromotersPage() {
     return Object.entries(map)
       .map(([store, s]) => ({ store, ...s, rate: Math.round((s.realized / s.planned) * 100) }))
       .sort((a, b) => b.rate - a.rate)
-  }, [])
+  }, [VISITS])
 
   const promoterRanking = useMemo(() => {
     const map: Record<string, { total: number; onTime: number; totalMins: number; count: number }> = {}
-    MOCK_VISITS.forEach(v => {
+    VISITS.forEach(v => {
       if (!map[v.promoter_name]) map[v.promoter_name] = { total: 0, onTime: 0, totalMins: 0, count: 0 }
       if (v.check_in_at) {
         map[v.promoter_name].total++
@@ -490,10 +532,17 @@ export function PromotersPage() {
         punctuality: s.total > 0 ? Math.round((s.onTime / s.total) * 100) : 0,
       }))
       .sort((a, b) => b.punctuality - a.punctuality)
-  }, [])
+  }, [VISITS])
 
   return (
     <div className="space-y-6 pb-8">
+
+      {/* ── Banner modo demo ── */}
+      {usingMock && !isLoading && (
+        <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-2.5 text-xs text-amber-700 dark:text-amber-400">
+          <span className="font-bold">Modo demonstração</span> — exibindo dados de exemplo. Execute a migration 019 no Supabase para ativar dados reais.
+        </div>
+      )}
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between">
@@ -956,9 +1005,9 @@ export function PromotersPage() {
       )}
 
       {/* ── Modals / Drawer ── */}
-      {showCalendar && <WeeklyCalendar visits={MOCK_VISITS} onClose={() => setShowCalendar(false)} />}
-      {showNew      && <NewAppointmentModal open={showNew} onClose={() => setShowNew(false)} />}
-      {drawerSupplier && <SupplierDrawer supplierName={drawerSupplier} visits={MOCK_VISITS} onClose={() => setDrawerSupplier(null)} />}
+      {showCalendar && <WeeklyCalendar visits={VISITS} onClose={() => setShowCalendar(false)} />}
+      {showNew      && <NewAppointmentModal open={showNew} onClose={() => setShowNew(false)} onSave={handleSaveAppointment} />}
+      {drawerSupplier && <SupplierDrawer supplierName={drawerSupplier} visits={VISITS} onClose={() => setDrawerSupplier(null)} />}
     </div>
   )
 }
