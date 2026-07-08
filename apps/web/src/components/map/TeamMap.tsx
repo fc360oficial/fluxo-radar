@@ -18,22 +18,31 @@ const STATUS_COLOR: Record<string, string> = {
   offline: '#94a3b8',
 }
 
-function makeIcon(color: string) {
+export const MODULE_COLOR: Record<string, string> = {
+  survey:    '#6366f1',
+  promoters: '#3b82f6',
+  trade:     '#10b981',
+  mystery:   '#ec4899',
+}
+
+function makeIcon(color: string, shape: 'circle' | 'square' = 'circle') {
+  const borderRadius = shape === 'square' ? '3px' : '50%'
   return L.divIcon({
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
+    html: `<div style="width:14px;height:14px;border-radius:${borderRadius};background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7],
     className: '',
   })
 }
 
-interface Member {
+export interface Member {
   user_id: string
   name: string
   last_action: string
   last_location: string
   last_active_at: string
   field_status: string
+  module?: string
   lat: number | null
   lng: number | null
 }
@@ -71,22 +80,27 @@ export function TeamMap({ members, height = '100%' }: Props) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <AutoFit members={members} />
-      {withCoords.map((m) => (
-        <Marker
-          key={m.user_id}
-          position={[m.lat!, m.lng!]}
-          icon={makeIcon(STATUS_COLOR[m.field_status] ?? STATUS_COLOR.offline)}
-        >
-          <Popup>
-            <div className="text-xs space-y-0.5 min-w-[140px]">
-              <p className="font-bold text-sm">{m.name}</p>
-              <p className="text-gray-500">{m.last_action}</p>
-              {m.last_location && <p className="text-gray-400">{m.last_location}</p>}
-              <p className="text-gray-400">{relativeTime(m.last_active_at)}</p>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
+      {withCoords.map((m) => {
+        const moduleColor = m.module ? MODULE_COLOR[m.module] : null
+        const color = moduleColor ?? STATUS_COLOR[m.field_status] ?? STATUS_COLOR.offline
+        const shape = m.module && m.module !== 'survey' ? 'square' : 'circle'
+        return (
+          <Marker
+            key={m.user_id}
+            position={[m.lat!, m.lng!]}
+            icon={makeIcon(color, shape)}
+          >
+            <Popup>
+              <div className="text-xs space-y-0.5 min-w-[140px]">
+                <p className="font-bold text-sm">{m.name}</p>
+                <p className="text-gray-500">{m.last_action}</p>
+                {m.last_location && <p className="text-gray-400">{m.last_location}</p>}
+                <p className="text-gray-400">{relativeTime(m.last_active_at)}</p>
+              </div>
+            </Popup>
+          </Marker>
+        )
+      })}
       {withCoords.length === 0 && (
         <div />
       )}
