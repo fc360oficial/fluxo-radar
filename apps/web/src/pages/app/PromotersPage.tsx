@@ -81,11 +81,6 @@ function localDate(offset = 0) {
   d.setDate(d.getDate() + offset)
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
-function minsAgoStr(mins: number) {
-  const d = new Date(); d.setMinutes(d.getMinutes() - mins)
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
-}
-
 const TODAY = localDate()
 
 // ── Time utilities ────────────────────────────────────────────────────────────
@@ -120,22 +115,6 @@ function avgDuration(visits: SupplierVisit[]): string {
   const avg = Math.round(total / done.length)
   return avg < 60 ? `${avg} min` : `${Math.floor(avg/60)}h ${avg%60 ? avg%60 + 'min' : ''}`
 }
-
-// ── Mock data (TODO: replace with Supabase API) ───────────────────────────────
-const MOCK_VISITS: SupplierVisit[] = [
-  { id:'1',  date: TODAY,         supplier:'Nestlé',    promoter_name:'João Silva',      store:'Porta Larga',   scheduled_time:'09:00', check_in_at:'09:15',          check_out_at:'10:42', status:'completed' },
-  { id:'2',  date: TODAY,         supplier:'Aurora',    promoter_name:'Paulo Santos',    store:'Atacarejo Sul', scheduled_time:'08:30', check_in_at: minsAgoStr(42),  check_out_at:null,    status:'in_store'  },
-  { id:'3',  date: TODAY,         supplier:'Coca-Cola', promoter_name:'Carlos Oliveira', store:'Muribeca',      scheduled_time:'10:00', check_in_at:null,             check_out_at:null,    status:'missed'    },
-  { id:'4',  date: TODAY,         supplier:'Ambev',     promoter_name:'Roberto Costa',   store:'Ponte Nova',    scheduled_time:'14:00', check_in_at:null,             check_out_at:null,    status:'scheduled' },
-  { id:'5',  date: localDate(-1), supplier:'Bimbo',     promoter_name:'Maria Ferreira',  store:'Nordeste',      scheduled_time:'10:00', check_in_at:'10:05',          check_out_at:'11:30', status:'completed' },
-  { id:'6',  date: localDate(-1), supplier:'Nestlé',    promoter_name:'João Silva',      store:'Atacarejo Sul', scheduled_time:'13:30', check_in_at:'13:28',          check_out_at:'14:15', status:'completed' },
-  { id:'7',  date: localDate(-1), supplier:'Coca-Cola', promoter_name:'Carlos Oliveira', store:'Ponte Nova',    scheduled_time:'09:00', check_in_at:null,             check_out_at:null,    status:'missed'    },
-  { id:'8',  date: localDate(1),  supplier:'Nestlé',    promoter_name:'João Silva',      store:'Porta Larga',   scheduled_time:'09:00', check_in_at:null,             check_out_at:null,    status:'scheduled' },
-  { id:'9',  date: localDate(1),  supplier:'Aurora',    promoter_name:'Paulo Santos',    store:'Muribeca',      scheduled_time:'08:00', check_in_at:null,             check_out_at:null,    status:'scheduled' },
-  { id:'10', date: localDate(2),  supplier:'Ambev',     promoter_name:'Roberto Costa',   store:'Nordeste',      scheduled_time:'14:00', check_in_at:null,             check_out_at:null,    status:'scheduled' },
-  { id:'11', date: localDate(2),  supplier:'Bimbo',     promoter_name:'Maria Ferreira',  store:'Porta Larga',   scheduled_time:'09:00', check_in_at:null,             check_out_at:null,    status:'scheduled' },
-  { id:'12', date: localDate(3),  supplier:'Coca-Cola', promoter_name:'Carlos Oliveira', store:'Atacarejo Sul', scheduled_time:'10:00', check_in_at:null,             check_out_at:null,    status:'scheduled' },
-]
 
 // ── Weekly Calendar ───────────────────────────────────────────────────────────
 const WEEK_DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
@@ -437,11 +416,7 @@ export function PromotersPage() {
     })
   }, [createVisit])
 
-  // Use real data if available, otherwise show mock data (demo mode)
-  const usingMock = !isLoading && (visitsError !== null || (realVisits?.length === 0 && true))
-  const VISITS: SupplierVisit[] = (!isLoading && realVisits && realVisits.length > 0)
-    ? (realVisits as unknown as SupplierVisit[])
-    : MOCK_VISITS
+  const VISITS: SupplierVisit[] = (realVisits as unknown as SupplierVisit[]) ?? []
 
   // Refresh elapsed time every minute
   useEffect(() => {
@@ -536,13 +511,6 @@ export function PromotersPage() {
 
   return (
     <div className="space-y-6 pb-8">
-
-      {/* ── Banner modo demo ── */}
-      {usingMock && !isLoading && (
-        <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-2.5 text-xs text-amber-700 dark:text-amber-400">
-          <span className="font-bold">Modo demonstração</span> — exibindo dados de exemplo. Execute a migration 019 no Supabase para ativar dados reais.
-        </div>
-      )}
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between">
@@ -903,7 +871,7 @@ export function PromotersPage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {Array.from(new Set(MOCK_VISITS.map(v => v.store))).sort().map(store => (
+          {Array.from(new Set(VISITS.map(v => v.store))).sort().map(store => (
             <button
               key={store}
               onClick={() => setQrStore(store)}
