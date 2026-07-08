@@ -2,14 +2,21 @@ import { useState, useMemo, useEffect } from 'react'
 import {
   Calendar, CalendarDays, CheckCircle, ChevronLeft, ChevronRight,
   MapPin, Plus, QrCode, Search, Users, X, Phone, Mail, Building2,
-  Clock, Store, BarChart3, Award, TrendingUp,
+  Clock, Store, BarChart3, Award, TrendingUp, Printer, Download,
 } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { Button }   from '@/components/ui/button'
 import { Input }    from '@/components/ui/input'
 import { Label }    from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+
+// URL base do check-in mobile (alterar quando PWA for publicado)
+const CHECKIN_BASE = 'https://campo.fluxoradar.com.br'
+function storeCheckinUrl(store: string) {
+  return `${CHECKIN_BASE}/checkin/${encodeURIComponent(store)}`
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type VisitStatus = 'scheduled' | 'in_store' | 'completed' | 'missed' | 'weekend'
@@ -391,6 +398,7 @@ export function PromotersPage() {
   const [showCalendar, setShowCalendar] = useState(false)
   const [showNew, setShowNew]           = useState(false)
   const [drawerSupplier, setDrawerSupplier] = useState<string | null>(null)
+  const [qrStore, setQrStore]           = useState<string | null>(null)
   const [tick, setTick]                 = useState(0)
 
   // Refresh elapsed time every minute
@@ -828,27 +836,124 @@ export function PromotersPage() {
         </div>
       </div>
 
-      {/* ── QR Code notice ── */}
-      <div className="flex items-start gap-4 bg-muted/30 border border-dashed rounded-xl p-5">
-        <QrCode className="h-8 w-8 text-muted-foreground shrink-0 mt-0.5" />
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <p className="text-sm font-bold">Check-in Inteligente</p>
-            <span className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold">Em desenvolvimento</span>
+      {/* ── QR Code por loja ── */}
+      <div className="bg-card border rounded-xl p-5">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div className="flex items-center gap-2.5">
+            <QrCode className="h-5 w-5 text-primary shrink-0" />
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold">Check-in Inteligente</p>
+                <span className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold">Em desenvolvimento</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                QR Codes exclusivos por loja — promotores escaneiam para registrar entrada e saída
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mb-2">
-            Cada loja possuirá um QR Code exclusivo. O promotor realizará Check-in e Check-out utilizando esse QR Code.
-          </p>
-          <p className="text-xs text-muted-foreground">O sistema registrará automaticamente:</p>
-          <ul className="mt-1 space-y-0.5">
-            {['Loja','Data','Hora','Tempo em loja','Localização (GPS)'].map(item => (
-              <li key={item} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <span className="h-1 w-1 rounded-full bg-muted-foreground shrink-0" />{item}
-              </li>
-            ))}
-          </ul>
         </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {Array.from(new Set(MOCK_VISITS.map(v => v.store))).sort().map(store => (
+            <button
+              key={store}
+              onClick={() => setQrStore(store)}
+              className="group border rounded-xl p-3 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center gap-2 text-center"
+            >
+              <div className="bg-white rounded-lg p-2 border group-hover:border-primary/30 transition-colors">
+                <QRCodeSVG value={storeCheckinUrl(store)} size={72} />
+              </div>
+              <p className="text-xs font-semibold leading-tight">{store}</p>
+              <span className="text-[10px] text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-1">
+                <Printer className="h-3 w-3" /> Ver / Imprimir
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <p className="text-[11px] text-muted-foreground mt-4 border-t pt-3">
+          Fixe o QR Code na entrada de cada loja. O promotor escaneia com o celular para registrar check-in e check-out automaticamente. O sistema registrará: loja, data, hora, tempo em loja e localização (GPS).
+        </p>
       </div>
+
+      {/* Dialog QR Code ampliado */}
+      {qrStore && (
+        <Dialog open onOpenChange={() => setQrStore(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <QrCode className="h-4 w-4 text-primary" /> {qrStore}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center gap-4 py-2">
+              <div className="bg-white p-5 rounded-2xl border-2 shadow-sm">
+                <QRCodeSVG
+                  value={storeCheckinUrl(qrStore)}
+                  size={220}
+                  includeMargin={false}
+                  imageSettings={{ src: '/logo.png', height: 36, width: 36, excavate: true }}
+                />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-sm font-semibold">{qrStore}</p>
+                <p className="text-xs text-muted-foreground">Check-in Inteligente · Fluxo Radar</p>
+              </div>
+              <div className="w-full bg-muted/50 rounded-lg px-3 py-2">
+                <p className="text-[10px] text-muted-foreground font-mono break-all text-center">
+                  {storeCheckinUrl(qrStore)}
+                </p>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" className="gap-2" onClick={() => {
+                const svg = document.querySelector('.qr-print-target svg')
+                if (svg) {
+                  const win = window.open('', '_blank')
+                  if (win) {
+                    win.document.write(`<html><head><title>QR Code · ${qrStore}</title><style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:sans-serif;flex-direction:column;gap:16px} p{font-size:18px;font-weight:700}</style></head><body>${svg.outerHTML}<p>${qrStore}</p><p style="font-size:12px;font-weight:400;color:#666">Check-in Inteligente · Fluxo Radar</p></body></html>`)
+                    win.document.close()
+                    win.print()
+                  }
+                } else {
+                  window.print()
+                }
+              }}>
+                <Printer className="h-4 w-4" /> Imprimir
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={() => {
+                const canvas = document.createElement('canvas')
+                const size = 400
+                canvas.width = size; canvas.height = size
+                const ctx = canvas.getContext('2d')
+                if (ctx) {
+                  const svgEl = document.querySelector('.qr-print-target svg')
+                  if (svgEl) {
+                    const blob = new Blob([svgEl.outerHTML], { type: 'image/svg+xml' })
+                    const url = URL.createObjectURL(blob)
+                    const img = new Image(); img.src = url
+                    img.onload = () => {
+                      ctx.fillStyle = 'white'; ctx.fillRect(0, 0, size, size)
+                      ctx.drawImage(img, 0, 0, size, size)
+                      const a = document.createElement('a')
+                      a.download = `qrcode-${qrStore.toLowerCase().replace(/\s+/g, '-')}.png`
+                      a.href = canvas.toDataURL('image/png')
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    }
+                  }
+                }
+              }}>
+                <Download className="h-4 w-4" /> Baixar PNG
+              </Button>
+              <Button onClick={() => setQrStore(null)}>Fechar</Button>
+            </DialogFooter>
+            {/* Target invisível para print/export */}
+            <div className="qr-print-target hidden">
+              <QRCodeSVG value={storeCheckinUrl(qrStore)} size={400} />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* ── Modals / Drawer ── */}
       {showCalendar && <WeeklyCalendar visits={MOCK_VISITS} onClose={() => setShowCalendar(false)} />}
