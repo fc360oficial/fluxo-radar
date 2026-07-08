@@ -400,7 +400,7 @@ export function PromotersPage() {
   const [tick, setTick]                 = useState(0)
 
   // Real data from Supabase
-  const { data: realVisits, isLoading, error: visitsError } = usePromoterVisits()
+  const { data: realVisits } = usePromoterVisits()
   const createVisit = useCreatePromoterVisit()
 
   const handleSaveAppointment = useCallback(async (form: AppointmentForm) => {
