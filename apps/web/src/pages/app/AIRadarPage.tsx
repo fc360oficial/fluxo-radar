@@ -13,7 +13,7 @@ const MODULE_CONFIG = [
   { key: 'campaigns',       name: 'Pesquisa de Mercado', color: '#6366f1' },
   { key: 'price_research',  name: 'Pesquisa de Preços',  color: '#f59e0b' },
   { key: 'trade_marketing', name: 'Trade Marketing',     color: '#10b981' },
-  { key: 'promoters',       name: 'Promotores',          color: '#3b82f6' },
+  { key: 'promoters',       name: 'Gestão de Promotores', color: '#3b82f6' },
   { key: 'mystery_shopper', name: 'Cliente Oculto',      color: '#ec4899' },
   { key: 'expansion',       name: 'Expansão',            color: '#8b5cf6' },
   { key: 'competition',     name: 'Concorrência',        color: '#64748b' },

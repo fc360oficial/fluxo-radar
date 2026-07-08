@@ -17,14 +17,14 @@ const TYPE_COLORS: Record<string, string> = {
   'Cliente Oculto':      'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
   'Expansão':            'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   'Concorrência':        'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-  'Promotores':          'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  'Gestão de Promotores': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
 }
 
 const MODULE_SUMMARY_CONFIG: { key: keyof ModuleSummary; label: string; icon: React.ElementType; color: string }[] = [
   { key: 'campaigns',       label: 'Pesquisa de Mercado', icon: Megaphone,   color: '#6366f1' },
   { key: 'price_research',  label: 'Pesquisa de Preços',  icon: Tag,         color: '#f59e0b' },
   { key: 'trade_marketing', label: 'Trade Marketing',     icon: ShoppingBag, color: '#10b981' },
-  { key: 'promoters',       label: 'Promotores',          icon: UserCheck,   color: '#3b82f6' },
+  { key: 'promoters',       label: 'Gestão de Promotores', icon: UserCheck,   color: '#3b82f6' },
   { key: 'mystery_shopper', label: 'Cliente Oculto',      icon: Eye,         color: '#ec4899' },
   { key: 'expansion',       label: 'Expansão',            icon: Building2,   color: '#8b5cf6' },
   { key: 'competition',     label: 'Concorrência',        icon: BarChart2,   color: '#64748b' },

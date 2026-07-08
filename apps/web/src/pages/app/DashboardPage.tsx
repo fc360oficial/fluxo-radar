@@ -22,7 +22,7 @@ const TIPOS_COLETA_EMPTY = [
   { name: 'Pesquisas',       value: 0, color: '#6366f1' },
   { name: 'Preços',          value: 0, color: '#f59e0b' },
   { name: 'Trade Marketing', value: 0, color: '#10b981' },
-  { name: 'Promotores',      value: 0, color: '#3b82f6' },
+  { name: 'Gestão de Promotores', value: 0, color: '#3b82f6' },
   { name: 'Cliente Oculto',  value: 0, color: '#ec4899' },
 ]
 
@@ -37,7 +37,7 @@ const MODULE_CONFIG = [
   { key: 'campaigns',       name: 'Pesquisa de Mercado', color: '#6366f1', to: '/app/campaigns' },
   { key: 'price_research',  name: 'Pesquisa de Preços',  color: '#f59e0b', to: '/app/price-research' },
   { key: 'trade_marketing', name: 'Trade Marketing',     color: '#10b981', to: '/app/trade-marketing' },
-  { key: 'promoters',       name: 'Promotores',          color: '#3b82f6', to: '/app/promoters' },
+  { key: 'promoters',       name: 'Gestão de Promotores', color: '#3b82f6', to: '/app/promoters' },
   { key: 'mystery_shopper', name: 'Cliente Oculto',      color: '#ec4899', to: '/app/mystery-shopper' },
   { key: 'expansion',       name: 'Expansão',            color: '#8b5cf6', to: '/app/expansion' },
   { key: 'competition',     name: 'Concorrência',        color: '#64748b', to: '/app/competition' },
@@ -59,7 +59,7 @@ const modules = [
   { icon: Search,      label: 'Pesquisa de Mercado', sub: 'Ver andamento',     to: '/app/campaigns',       color: 'text-indigo-500 bg-indigo-50' },
   { icon: Tag,         label: 'Pesquisa de Preços',  sub: 'Ver coletados',     to: '/app/price-research',  color: 'text-amber-500 bg-amber-50' },
   { icon: ShoppingBag, label: 'Trade Marketing',     sub: 'Ver visitas',       to: '/app/trade-marketing', color: 'text-emerald-500 bg-emerald-50' },
-  { icon: UserCheck,   label: 'Promotores',          sub: 'Ver roteiro',       to: '/app/promoters',       color: 'text-blue-500 bg-blue-50' },
+  { icon: UserCheck,   label: 'Gestão de Promotores', sub: 'Ver roteiro',       to: '/app/promoters',       color: 'text-blue-500 bg-blue-50' },
   { icon: Eye,         label: 'Cliente Oculto',      sub: 'Ver avaliações',    to: '/app/mystery-shopper', color: 'text-pink-500 bg-pink-50' },
   { icon: Building2,   label: 'Expansão',            sub: 'Ver estudos',       to: '/app/expansion',       color: 'text-purple-500 bg-purple-50' },
   { icon: BarChart2,   label: 'Concorrência',        sub: 'Ver monitoramento', to: '/app/competition',     color: 'text-slate-500 bg-slate-100' },
