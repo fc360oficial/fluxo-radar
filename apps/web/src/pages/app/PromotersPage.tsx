@@ -428,6 +428,62 @@ export function PromotersPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, search, tick])
 
+  // ── Indicator calculations ────────────────────────────────────────────────
+  const supplierCompliance = useMemo(() => {
+    const map: Record<string, { planned: number; realized: number; missed: number }> = {}
+    MOCK_VISITS.forEach(v => {
+      if (!map[v.supplier]) map[v.supplier] = { planned: 0, realized: 0, missed: 0 }
+      map[v.supplier].planned++
+      if (v.status === 'completed' || v.status === 'in_store') map[v.supplier].realized++
+      if (v.status === 'missed') map[v.supplier].missed++
+    })
+    return Object.entries(map)
+      .map(([supplier, s]) => ({ supplier, ...s, rate: Math.round((s.realized / s.planned) * 100) }))
+      .sort((a, b) => b.rate - a.rate)
+  }, [])
+
+  const storeCompliance = useMemo(() => {
+    const map: Record<string, { planned: number; realized: number }> = {}
+    MOCK_VISITS.forEach(v => {
+      if (!map[v.store]) map[v.store] = { planned: 0, realized: 0 }
+      map[v.store].planned++
+      if (v.status === 'completed' || v.status === 'in_store') map[v.store].realized++
+    })
+    return Object.entries(map)
+      .map(([store, s]) => ({ store, ...s, rate: Math.round((s.realized / s.planned) * 100) }))
+      .sort((a, b) => b.rate - a.rate)
+  }, [])
+
+  const promoterRanking = useMemo(() => {
+    const map: Record<string, { total: number; onTime: number; totalMins: number; count: number }> = {}
+    MOCK_VISITS.forEach(v => {
+      if (!map[v.promoter_name]) map[v.promoter_name] = { total: 0, onTime: 0, totalMins: 0, count: 0 }
+      if (v.check_in_at) {
+        map[v.promoter_name].total++
+        if (v.scheduled_time) {
+          const [sh, sm] = v.scheduled_time.split(':').map(Number)
+          const [ch, cm] = v.check_in_at.split(':').map(Number)
+          if ((ch * 60 + cm) - (sh * 60 + sm) <= 5) map[v.promoter_name].onTime++
+        }
+      }
+      if (v.check_in_at && v.check_out_at) {
+        const [ih, im] = v.check_in_at.split(':').map(Number)
+        const [oh, om] = v.check_out_at.split(':').map(Number)
+        map[v.promoter_name].totalMins += (oh * 60 + om) - (ih * 60 + im)
+        map[v.promoter_name].count++
+      }
+    })
+    return Object.entries(map)
+      .map(([name, s]) => ({
+        name,
+        total: s.total,
+        onTime: s.onTime,
+        avgMins: s.count > 0 ? Math.round(s.totalMins / s.count) : 0,
+        punctuality: s.total > 0 ? Math.round((s.onTime / s.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.punctuality - a.punctuality)
+  }, [])
+
   return (
     <div className="space-y-6 pb-8">
 
@@ -637,21 +693,139 @@ export function PromotersPage() {
         </div>
       </div>
 
-      {/* ── Estrutura para indicadores futuros (em desenvolvimento) ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {[
-          { icon: BarChart3,  label: 'Cumprimento por Fornecedor' },
-          { icon: Store,      label: 'Cumprimento por Loja' },
-          { icon: Clock,      label: 'Tempo Médio em Loja' },
-          { icon: Award,      label: 'Ranking de Promotores' },
-          { icon: TrendingUp, label: 'Ranking de Fornecedores' },
-        ].map(({ icon: Icon, label }) => (
-          <div key={label} className="bg-card border border-dashed rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 text-center opacity-50">
-            <Icon className="h-4 w-4 text-muted-foreground" />
-            <p className="text-[11px] text-muted-foreground leading-tight">{label}</p>
-            <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded-full font-semibold text-muted-foreground uppercase tracking-wide">Em breve</span>
+      {/* ── Indicadores ── */}
+      <div className="space-y-4">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Indicadores</h2>
+
+        {/* Cumprimento por Fornecedor + por Loja */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-card border rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold">Cumprimento por Fornecedor</p>
+            </div>
+            <div className="space-y-3.5">
+              {supplierCompliance.map(s => (
+                <div key={s.supplier}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${supplierColor(s.supplier)}`}>{s.supplier}</span>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">{s.realized}/{s.planned} visitas</span>
+                      <span className={`font-bold tabular-nums ${s.rate >= 80 ? 'text-green-600' : s.rate >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{s.rate}%</span>
+                    </div>
+                  </div>
+                  <Progress value={s.rate} className="h-1.5" />
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
+
+          <div className="bg-card border rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Store className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold">Cumprimento por Loja</p>
+            </div>
+            <div className="space-y-3.5">
+              {storeCompliance.map(s => (
+                <div key={s.store}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-medium truncate max-w-[60%]">{s.store}</span>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">{s.realized}/{s.planned}</span>
+                      <span className={`font-bold tabular-nums ${s.rate >= 80 ? 'text-green-600' : s.rate >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{s.rate}%</span>
+                    </div>
+                  </div>
+                  <Progress value={s.rate} className="h-1.5" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Ranking Promotores + Tempo Médio + Ranking Fornecedores */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Ranking de Promotores */}
+          <div className="bg-card border rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Award className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold">Ranking de Promotores</p>
+            </div>
+            <p className="text-[11px] text-muted-foreground mb-4">por pontualidade</p>
+            <div className="space-y-3">
+              {promoterRanking.map((p, i) => (
+                <div key={p.name} className="flex items-center gap-2">
+                  <span className={`text-xs font-black w-5 shrink-0 ${i === 0 ? 'text-amber-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-amber-700/70' : 'text-muted-foreground'}`}>{i+1}°</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium truncate">{p.name.split(' ')[0]}</p>
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <span className="text-muted-foreground">{p.onTime}/{p.total}</span>
+                        <span className={`font-bold tabular-nums ${p.punctuality >= 80 ? 'text-green-600' : p.punctuality >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{p.punctuality}%</span>
+                      </div>
+                    </div>
+                    <Progress value={p.punctuality} className="h-1" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tempo Médio em Loja */}
+          <div className="bg-card border rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold">Tempo Médio em Loja</p>
+            </div>
+            <p className="text-[11px] text-muted-foreground mb-4">por promotor</p>
+            <div className="space-y-3">
+              {(() => {
+                const withTime = promoterRanking.filter(p => p.avgMins > 0).sort((a, b) => b.avgMins - a.avgMins)
+                const maxMins = withTime[0]?.avgMins ?? 1
+                return withTime.map((p, i) => {
+                  const pct = Math.round((p.avgMins / maxMins) * 100)
+                  const h = Math.floor(p.avgMins / 60)
+                  const m = p.avgMins % 60
+                  const dur = h > 0 ? `${h}h${m ? m + 'min' : ''}` : `${m}min`
+                  return (
+                    <div key={p.name} className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-5 shrink-0">{i+1}°</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-xs font-medium truncate">{p.name.split(' ')[0]}</p>
+                          <span className="text-xs font-bold text-primary shrink-0 ml-2">{dur}</span>
+                        </div>
+                        <Progress value={pct} className="h-1" />
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          </div>
+
+          {/* Ranking de Fornecedores */}
+          <div className="bg-card border rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold">Ranking de Fornecedores</p>
+            </div>
+            <p className="text-[11px] text-muted-foreground mb-4">por cumprimento</p>
+            <div className="space-y-3">
+              {supplierCompliance.map((s, i) => (
+                <div key={s.supplier} className="flex items-center gap-2">
+                  <span className={`text-xs font-black w-5 shrink-0 ${i === 0 ? 'text-amber-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-amber-700/70' : 'text-muted-foreground'}`}>{i+1}°</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${supplierColor(s.supplier)}`}>{s.supplier}</span>
+                      <span className={`text-xs font-bold tabular-nums ${s.rate >= 80 ? 'text-green-600' : s.rate >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{s.rate}%</span>
+                    </div>
+                    <Progress value={s.rate} className="h-1" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── QR Code notice ── */}
