@@ -125,7 +125,7 @@ export function CampaignsPage() {
                       {c.start_date && (
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5" />
-                          {new Date(c.start_date).toLocaleDateString('pt-BR')}
+                          {new Date(c.start_date + 'T12:00:00').toLocaleDateString('pt-BR')}
                         </span>
                       )}
                     </div>

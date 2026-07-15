@@ -193,12 +193,12 @@ export function CampaignDetailPage() {
             </span>
             <span className="flex items-center gap-1.5">
               <Calendar className="h-4 w-4" />
-              Início: {new Date(campaign.start_date).toLocaleDateString('pt-BR')}
+              Início: {new Date(campaign.start_date + 'T12:00:00').toLocaleDateString('pt-BR')}
             </span>
             {campaign.end_date && (
               <span className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
-                Término: {new Date(campaign.end_date).toLocaleDateString('pt-BR')}
+                Término: {new Date(campaign.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}
               </span>
             )}
           </div>
