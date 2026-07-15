@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, MapPin, Target, CheckCircle, PlayCircle, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { cache } from '@/lib/offlineQueue'
 
 interface CampaignData {
   id: string
@@ -23,12 +24,17 @@ export function CampaignDetailMobilePage() {
   useEffect(() => { load() }, [])
 
   async function load() {
-    const { data } = await supabase
-      .from('campaign_progress')
-      .select('id,name,city,neighborhood,state,goal,total_surveys,surveys_today')
-      .eq('id', id!)
-      .single()
-    setCampaign(data as CampaignData | null)
+    if (navigator.onLine) {
+      const { data } = await supabase
+        .from('campaign_progress')
+        .select('id,name,city,neighborhood,state,goal,total_surveys,surveys_today')
+        .eq('id', id!)
+        .single()
+      if (data) { setCampaign(data as CampaignData); cache.campaign.set(id!, data) }
+    } else {
+      const cached = cache.campaign.get<CampaignData>(id!)
+      if (cached) setCampaign(cached)
+    }
     setLoading(false)
   }
 

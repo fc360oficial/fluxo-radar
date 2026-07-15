@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { MapPin, ChevronRight, LogOut, RefreshCw, WifiOff, Clock, X, Upload } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { signOut } from '@/stores/auth'
-import { pendingCount } from '@/lib/offlineQueue'
+import { pendingCount, cache } from '@/lib/offlineQueue'
 import { syncQueue } from '@/App'
 import type { MobileProfile } from '@/stores/auth'
 
@@ -38,15 +38,23 @@ export function CampaignsPage() {
   async function load() {
     setLoading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { navigate('/login', { replace: true }); return }
+      // getSession funciona offline (localStorage); getUser faz chamada de rede
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) { navigate('/login', { replace: true }); return }
 
-      const [{ data: prof }, { data: camps }] = await Promise.all([
-        supabase.from('profiles').select('id,name,email,role,company_id,interviewer_pin').eq('id', user.id).single(),
-        supabase.from('campaign_progress').select('id,name,city,neighborhood,state,goal,total_surveys').eq('status', 'active'),
-      ])
-      setProfile(prof as MobileProfile)
-      setCampaigns((camps ?? []) as Campaign[])
+      if (navigator.onLine) {
+        const [{ data: prof }, { data: camps }] = await Promise.all([
+          supabase.from('profiles').select('id,name,email,role,company_id,interviewer_pin').eq('id', session.user.id).single(),
+          supabase.from('campaign_progress').select('id,name,city,neighborhood,state,goal,total_surveys').eq('status', 'active'),
+        ])
+        if (prof)  { setProfile(prof as MobileProfile); cache.profile.set(prof) }
+        if (camps) { setCampaigns(camps as Campaign[]);  cache.campaigns.set(camps) }
+      } else {
+        const cachedProfile   = cache.profile.get<MobileProfile>()
+        const cachedCampaigns = cache.campaigns.get<Campaign[]>()
+        if (cachedProfile)   setProfile(cachedProfile)
+        if (cachedCampaigns) setCampaigns(cachedCampaigns)
+      }
     } finally {
       setLoading(false)
       setPending(pendingCount())

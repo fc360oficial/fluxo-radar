@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, MapPin, Loader2, CheckCircle, WifiOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { enqueue } from '@/lib/offlineQueue'
+import { enqueue, cache } from '@/lib/offlineQueue'
 
 interface Question {
   id: string
@@ -46,18 +46,35 @@ export function SurveyPage() {
   }, [])
 
   async function loadCampaign() {
-    const [{ data: camp }, { data: qs }, { data: { session } }] = await Promise.all([
-      supabase.from('campaigns').select('name').eq('id', id!).single(),
-      supabase.rpc('get_campaign_questions', { p_campaign_id: id }),
-      supabase.auth.getSession(),
-    ])
-    setCampaignName((camp as { name: string } | null)?.name ?? '')
-    setQuestions((qs ?? []) as Question[])
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (navigator.onLine) {
+      const [{ data: camp }, { data: qs }] = await Promise.all([
+        supabase.from('campaigns').select('name').eq('id', id!).single(),
+        supabase.rpc('get_campaign_questions', { p_campaign_id: id }),
+      ])
+      const name = (camp as { name: string } | null)?.name ?? ''
+      const questions = (qs ?? []) as Question[]
+      setCampaignName(name)
+      setQuestions(questions)
+      cache.questions.set(id!, questions)
+      localStorage.setItem('fluxo_campname_' + id, name)
+    } else {
+      const qs = cache.questions.get<Question[]>(id!) ?? []
+      const name = localStorage.getItem('fluxo_campname_' + id) ?? ''
+      setQuestions(qs)
+      setCampaignName(name)
+    }
 
     if (session?.user) {
       setUserId(session.user.id)
-      const { data: prof } = await supabase.from('profiles').select('company_id').eq('id', session.user.id).single()
-      setCompanyId((prof as { company_id: string } | null)?.company_id ?? null)
+      let cid = cache.companyId.get()
+      if (!cid || navigator.onLine) {
+        const { data: prof } = await supabase.from('profiles').select('company_id').eq('id', session.user.id).single()
+        cid = (prof as { company_id: string } | null)?.company_id ?? null
+        if (cid) cache.companyId.set(cid)
+      }
+      setCompanyId(cid)
     }
 
     setLoading(false)
